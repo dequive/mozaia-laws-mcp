@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mozaia-laws-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server — programmatic access to the Mozambican law library (Mozaia)"
 authors = ["Mozaia Team <developers@mozaia.mz>"]
 license = "MIT"

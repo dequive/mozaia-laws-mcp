@@ -95,6 +95,68 @@ Add to `claude_desktop_config.json`
 
 ## Tools
 
+### `search_semantic` — natural language search over articles
+
+The primary search tool. Use it when the user asks a legal question in plain language.
+
+**Inputs:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | Yes | Legal question in natural language |
+| `top_k` | integer | No | Number of results, max 50 (default: 10) |
+
+**Example:**
+```
+search_semantic(q="qual é o prazo de aviso prévio no contrato de trabalho?")
+search_semantic(q="indemnização por despedimento sem justa causa", top_k=5)
+```
+
+**Returns:** ranked article list with excerpt, canonical citation, relevance score, and hit type.
+
+---
+
+### `get_law_relationships` — normative graph
+
+Reveals the full normative chain: what a diploma revokes, amends, implements, and which later instruments affect it. Use before citing a law to ensure it hasn't been superseded by a downstream instrument.
+
+**Inputs:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `law_id` | string | Yes | Canonical diploma identifier |
+| `relation_type` | string | No | Filter: `amends`, `revokes`, `supersedes`, `references`, `complements`, `conflicts`, `implements`, `suspends`, `exceptions` |
+
+**Example:**
+```
+get_law_relationships(law_id="lei_trabalho_2007")
+get_law_relationships(law_id="lei_trabalho_2007", relation_type="revokes")
+```
+
+**Returns:** outgoing and incoming relationships with peer `law_id`, effective date, and confidence score.
+
+---
+
+### `list_amendments` — article version history
+
+Returns every version of an article since original publication, with the amending law and date of each change. Essential for retroactivity analysis and past-fact disputes.
+
+**Inputs:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `law_id` | string | Yes | Diploma identifier |
+| `article_number` | string | Yes | Article number, e.g. `"70"` |
+
+**Example:**
+```
+list_amendments(law_id="lei_trabalho_2023", article_number="128")
+```
+
+**Returns:** chronological list of versions — text, version label, amending law, validity range, and `is_current` flag.
+
+---
+
 ### `search_laws` — find a diploma by name or topic
 
 Use this first when you know a law by name or subject but not its `law_id`.

@@ -2,9 +2,12 @@
 
 Ferramentas expostas:
   search_laws           — pesquisa paginada de diplomas por título, domínio ou ano
+  search_semantic       — pesquisa semântica BM25+pgvector em linguagem natural
   get_law_status        — estado de vigência + citador de um diploma
+  get_law_relationships — grafo normativo: o que a lei revoga, altera e referencia
   get_article           — texto actual de um artigo + citador
   get_article_at_date   — texto do artigo em vigor numa data histórica
+  list_amendments       — histórico completo de versões de um artigo
   cite                  — resolve citação PT em lei + artigo
 
 Configuração (variáveis de ambiente):
@@ -91,6 +94,30 @@ async def _call(method: str, path: str, **kwargs: Any) -> dict:
 
 _TOOLS = [
     types.Tool(
+        name="search_semantic",
+        description=(
+            "Pesquisa artigos de legislação moçambicana usando linguagem natural — BM25 + pgvector. "
+            "Usar quando o utilizador faz uma pergunta jurídica como 'qual é o prazo de aviso prévio?' "
+            "ou 'o que diz a lei sobre despedimento sem justa causa?'. "
+            "Devolve artigos relevantes com excerto, citação canónica e score de relevância."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "q": {
+                    "type": "string",
+                    "description": "Questão jurídica em linguagem natural, ex: 'prazo de aviso prévio no contrato de trabalho'.",
+                },
+                "top_k": {
+                    "type": "integer",
+                    "description": "Número de resultados (máx 50, default 10).",
+                    "default": 10,
+                },
+            },
+            "required": ["q"],
+        },
+    ),
+    types.Tool(
         name="search_laws",
         description=(
             "Pesquisa diplomas na base de dados de legislação moçambicana. "
@@ -129,6 +156,29 @@ _TOOLS = [
                 },
             },
             "required": [],
+        },
+    ),
+    types.Tool(
+        name="get_law_relationships",
+        description=(
+            "Devolve o grafo normativo de um diploma: o que revoga, altera, suspende, remete e implementa, "
+            "e quais diplomas posteriores o afectam. "
+            "Usar para navegar a cadeia normativa antes de citar uma lei — "
+            "garante que o diploma não foi revogado por um instrumento posterior não directamente referenciado."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "law_id": {
+                    "type": "string",
+                    "description": "Identificador canónico do diploma, ex: 'lei_trabalho_2023'.",
+                },
+                "relation_type": {
+                    "type": "string",
+                    "description": "Filtrar por tipo: amends, revokes, supersedes, references, complements, conflicts, implements, suspends, exceptions.",
+                },
+            },
+            "required": ["law_id"],
         },
     ),
     types.Tool(
@@ -202,6 +252,29 @@ _TOOLS = [
         },
     ),
     types.Tool(
+        name="list_amendments",
+        description=(
+            "Devolve o histórico completo de versões de um artigo — "
+            "todas as redacções desde a publicação original até ao texto actual, "
+            "com indicação da lei que introduziu cada alteração e data de vigência. "
+            "Usar para due diligence, análise de retroactividade e conflitos temporais de normas."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "law_id": {
+                    "type": "string",
+                    "description": "Identificador canónico do diploma.",
+                },
+                "article_number": {
+                    "type": "string",
+                    "description": "Número do artigo, ex: '70'.",
+                },
+            },
+            "required": ["law_id", "article_number"],
+        },
+    ),
+    types.Tool(
         name="cite",
         description=(
             "Resolve uma citação jurídica em português para o diploma e artigo correspondentes "
@@ -250,6 +323,24 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
 
 
 async def _dispatch(name: str, args: dict) -> dict:
+    if name == "search_semantic":
+        params = {"q": args["q"]}
+        if args.get("top_k") is not None:
+            params["top_k"] = args["top_k"]
+        return await _call("GET", "/v1/intelligence/search", params=params)
+
+    if name == "get_law_relationships":
+        law_id = args["law_id"]
+        params = {}
+        if args.get("relation_type"):
+            params["relation_type"] = args["relation_type"]
+        return await _call("GET", f"/v1/intelligence/laws/{law_id}/relationships", params=params or None)
+
+    if name == "list_amendments":
+        law_id = args["law_id"]
+        article_number = args["article_number"]
+        return await _call("GET", f"/v1/intelligence/articles/{law_id}/{article_number}/amendments")
+
     if name == "search_laws":
         params = {k: v for k, v in {
             "q":               args.get("q"),
