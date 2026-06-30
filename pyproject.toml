@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "mozaia-laws-mcp"
+version = "0.1.0"
+description = "MCP server — programmatic access to the Mozambican law library (Mozaia)"
+authors = ["Mozaia Team <developers@mozaia.mz>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://mozaia.mz/developers"
+repository = "https://github.com/mozaia/mozaia-laws-mcp"
+documentation = "https://mozaia.mz/developers/mcp"
+keywords = [
+    "mcp",
+    "mozambique",
+    "legal",
+    "law",
+    "legislation",
+    "direito",
+    "legislacao",
+    "moçambique",
+    "claude",
+    "llm",
+    "ai-agent",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Legal Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+packages = [{ include = "mozaia_laws_mcp", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+mcp = "^1.0"
+httpx = "^0.28"
+
+[tool.poetry.scripts]
+mozaia-laws-mcp = "mozaia_laws_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
